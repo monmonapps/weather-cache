@@ -1,0 +1,41 @@
+name: fetch-weather
+
+on:
+  schedule:
+    - cron: "5 */3 * * *"   # every 3 hours, 5 min past the hour
+  workflow_dispatch:        # allow manual run
+
+concurrency:
+  group: fetch-weather
+  cancel-in-progress: false
+
+permissions:
+  contents: write           # required for peaceiris/actions-gh-pages
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install deps
+        run: pip install -r fetch/requirements.txt
+
+      - name: Fetch and transform
+        env:
+          OPENMETEO_APIKEY: ${{ secrets.OPENMETEO_APIKEY }}
+          URL_SALT:         ${{ secrets.URL_SALT }}
+        run: python fetch/fetch.py
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          force_orphan: true

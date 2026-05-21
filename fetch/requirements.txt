@@ -1,0 +1,3 @@
+# Phase 1: stdlib only (urllib, hmac, hashlib, json).
+# Phase 2 will add geopandas / shapely for grid generation,
+# but that script runs locally (not in CI), so it stays out of this file.

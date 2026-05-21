@@ -1,0 +1,8 @@
+{
+  "version": "phase1-2026-05-21",
+  "grid_lat_deg": 0.09,
+  "grid_lon_deg": 0.11,
+  "cells": [
+    {"id": "396_1270", "lat": 35.685, "lon": 139.775, "label_dev_only": "Tokyo Station"}
+  ]
+}
