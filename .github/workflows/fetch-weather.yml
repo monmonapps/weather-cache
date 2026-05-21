@@ -1,9 +1,17 @@
 name: fetch-weather
 
 on:
-  schedule:
-    - cron: "5 */3 * * *"   # every 3 hours, 5 min past the hour
-  workflow_dispatch:        # allow manual run
+  # Cron is disabled during dev to avoid burning the Open-Meteo Free 10k/day
+  # budget across all 2,632 cells. Re-enable after upgrading to the €29
+  # Standard plan (1M calls/month, comfortably fits 2,632 x 8/day = 631k/mo).
+  #   schedule:
+  #     - cron: "5 */3 * * *"   # every 3 hours, 5 min past the hour
+  workflow_dispatch:
+    inputs:
+      fetch_limit:
+        description: "Limit to first N cells (0 = no limit, full grid)"
+        type: string
+        default: "0"
 
 concurrency:
   group: fetch-weather
@@ -31,6 +39,7 @@ jobs:
         env:
           OPENMETEO_APIKEY: ${{ secrets.OPENMETEO_APIKEY }}
           URL_SALT:         ${{ secrets.URL_SALT }}
+          FETCH_LIMIT:      ${{ github.event.inputs.fetch_limit || '0' }}
         run: python fetch/fetch.py
 
       # peaceiris/actions-gh-pages v4 is the latest but still declares node20.

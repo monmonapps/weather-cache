@@ -17,3 +17,7 @@ Thumbs.db
 
 # Local test output
 docs/v1/*.json
+
+# ISJ ZIP cache (~150MB, re-downloadable)
+grid/cache/
+grid/_probe_urls.py
