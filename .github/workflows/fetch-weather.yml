@@ -33,6 +33,29 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Pull the previously published v1/ JSONs into the workspace before
+      # fetch.py runs. fetch.py only writes successful cells; cells that
+      # fail this run keep their previous JSON in the deployed output.
+      # Without this step, force_orphan would silently delete failed cells.
+      # First-ever run: gh-pages branch doesn't exist yet, so continue-on-error
+      # makes the step harmless.
+      - name: Restore previous gh-pages contents
+        uses: actions/checkout@v6
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: __prev_gh_pages
+
+      - name: Stage previous JSONs into docs/v1/
+        run: |
+          mkdir -p docs/v1
+          if [ -d __prev_gh_pages/v1 ]; then
+            cp -r __prev_gh_pages/v1/. docs/v1/
+            echo "Restored $(ls docs/v1 | wc -l) previous JSON file(s)"
+          else
+            echo "No previous gh-pages content to restore (first run?)"
+          fi
+
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
