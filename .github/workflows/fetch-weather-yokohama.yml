@@ -1,0 +1,76 @@
+name: fetch-weather-yokohama
+
+# Dev/test workflow: fetches only the 11 cells covering Yokohama City.
+# 11 cells * 8 runs/day = 88 calls/day -- well under the Free plan's
+# 10k/day budget, so enabling the cron during dev is safe.
+#
+# Note: this workflow restores the previously published v1/ JSONs before
+# fetch.py runs (same as fetch-weather.yml), so cells outside Yokohama
+# keep whatever data they had. Only the 11 Yokohama cells are refreshed.
+
+on:
+  # Uncomment to run automatically every 3 hours during testing.
+  #   schedule:
+  #     - cron: "15 */3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: fetch-weather-yokohama
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Restore previous gh-pages contents
+        uses: actions/checkout@v6
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: __prev_gh_pages
+
+      - name: Stage previous JSONs into docs/v1/
+        run: |
+          mkdir -p docs/v1
+          if [ -d __prev_gh_pages/v1 ]; then
+            cp -r __prev_gh_pages/v1/. docs/v1/
+            echo "Restored $(ls docs/v1 | wc -l) previous JSON file(s)"
+          else
+            echo "No previous gh-pages content to restore (first run?)"
+          fi
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install deps
+        run: pip install -r fetch/requirements.txt
+
+      - name: Fetch and transform (Yokohama only)
+        env:
+          OPENMETEO_APIKEY: ${{ secrets.OPENMETEO_APIKEY }}
+          URL_SALT:         ${{ secrets.URL_SALT }}
+          # 11 cells covering Yokohama City
+          # (lat 35.30-35.60, lon 139.49-139.79; grid 0.09 x 0.11 deg)
+          FETCH_CELL_IDS: >-
+            395_1268,395_1269,395_1270,
+            394_1268,394_1269,394_1270,
+            393_1268,393_1269,
+            392_1268,392_1269,392_1270
+        run: python fetch/fetch.py
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          force_orphan: true

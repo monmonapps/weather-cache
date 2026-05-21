@@ -11,6 +11,10 @@ Environment variables:
   FETCH_LIMIT       (optional) If set to a positive integer, only fetches
                     the first N cells. Useful for dev sanity tests on Free
                     tier so we don't burn the daily 10,000-call budget.
+  FETCH_CELL_IDS    (optional) Comma-separated list of cell IDs (e.g.
+                    "393_1269,394_1269"). If set, only those cells are
+                    fetched. Applied before FETCH_LIMIT. Unknown IDs are
+                    warned and skipped.
   FETCH_WORKERS     (optional) Parallelism. Default 8 (safe for Free's
                     ~300/min rate limit). Standard plan can go higher.
 """
@@ -90,6 +94,17 @@ def main() -> int:
 
     grid = _load_grid()
     cells = grid["cells"]
+
+    cell_ids_raw = os.environ.get("FETCH_CELL_IDS", "").strip()
+    if cell_ids_raw:
+        wanted = [s.strip() for s in cell_ids_raw.split(",") if s.strip()]
+        by_id = {c["id"]: c for c in cells}
+        missing = [cid for cid in wanted if cid not in by_id]
+        if missing:
+            print(f"[warn] FETCH_CELL_IDS: unknown cell id(s) skipped: {missing}", file=sys.stderr)
+        cells = [by_id[cid] for cid in wanted if cid in by_id]
+        print(f"[info] FETCH_CELL_IDS -> processing {len(cells)} cell(s)")
+
     if limit > 0:
         cells = cells[:limit]
         print(f"[info] FETCH_LIMIT={limit} -> processing only first {len(cells)} cell(s)")
