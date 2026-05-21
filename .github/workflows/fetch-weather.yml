@@ -2,7 +2,11 @@ name: fetch-weather
 
 on:
   schedule:
-    - cron: "5 */3 * * *"   # every 3 hours, 5 min past the hour (UTC)
+    # 6h interval, anchored to 04:35 JST so fresh data lands before morning
+    # wake-ups. JST 04:35 / 10:35 / 16:35 / 22:35 = UTC 19:35 / 01:35 / 07:35 / 13:35.
+    # 6h x 4/day x 2632 cells x 1.9 (Open-Meteo variable weight) ~= 600K calls/month,
+    # leaving 40% headroom under the Standard plan's 1M/month limit.
+    - cron: "35 1,7,13,19 * * *"
   workflow_dispatch:
     inputs:
       fetch_limit:
