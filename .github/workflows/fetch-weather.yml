@@ -24,6 +24,12 @@ jobs:
   fetch:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Opt all JS actions in this job into Node 24 ahead of GitHub's 2026-06-02
+    # forced switch. Lets us verify peaceiris/actions-gh-pages@v4 (still declared
+    # as node20) actually works on Node 24, rather than discovering breakage
+    # after the deadline.
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
       - uses: actions/checkout@v6
 
