@@ -1,11 +1,8 @@
 name: fetch-weather
 
 on:
-  # Cron is disabled during dev to avoid burning the Open-Meteo Free 10k/day
-  # budget across all 2,632 cells. Re-enable after upgrading to the €29
-  # Standard plan (1M calls/month, comfortably fits 2,632 x 8/day = 631k/mo).
-  #   schedule:
-  #     - cron: "5 */3 * * *"   # every 3 hours, 5 min past the hour
+  schedule:
+    - cron: "5 */3 * * *"   # every 3 hours, 5 min past the hour (UTC)
   workflow_dispatch:
     inputs:
       fetch_limit:
