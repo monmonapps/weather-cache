@@ -17,9 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: "pip"
@@ -33,8 +33,11 @@ jobs:
           URL_SALT:         ${{ secrets.URL_SALT }}
         run: python fetch/fetch.py
 
+      # peaceiris/actions-gh-pages v4 is the latest but still declares node20.
+      # GitHub will force-run Node 20 actions on Node 24 starting 2026-06-02;
+      # if this action breaks at that point, switch to actions/deploy-pages.
       - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
