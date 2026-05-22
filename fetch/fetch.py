@@ -185,7 +185,7 @@ def fetch_one(
         "daily": DAILY_PARAMS,
         "timezone": "Asia/Tokyo",
         "models": "best_match",
-        "forecast_days": "7",
+        "forecast_days": "14",
         "past_days": "0",
     }
     if api_key:

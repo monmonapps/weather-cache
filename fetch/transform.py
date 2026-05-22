@@ -12,7 +12,7 @@ from typing import Any
 
 SCHEMA_VERSION = 1
 HOURLY_LENGTH = 72   # 3 days x 24 hours
-DAILY_LENGTH = 7     # today + 6 days
+DAILY_LENGTH = 14    # today + 13 days
 VALID_FOR = timedelta(hours=3)  # matches GitHub Actions cron interval
 
 
