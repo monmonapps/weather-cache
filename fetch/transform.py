@@ -82,6 +82,7 @@ def _transform_daily(daily: dict[str, Any]) -> list[dict[str, Any]]:
             "temperature_max": _get_at(daily, "temperature_2m_max", i),
             "temperature_min": _get_at(daily, "temperature_2m_min", i),
             "precipitation_probability_max": _get_at(daily, "precipitation_probability_max", i),
+            "precipitation_probability_mean": _get_at(daily, "precipitation_probability_mean", i),
             "sunrise": _get_at(daily, "sunrise", i),
             "sunset": _get_at(daily, "sunset", i),
             "uv_index_max": _get_at(daily, "uv_index_max", i),
