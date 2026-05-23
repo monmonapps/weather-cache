@@ -183,6 +183,7 @@ def fetch_one(
         "current": CURRENT_PARAMS,
         "hourly": HOURLY_PARAMS,
         "daily": DAILY_PARAMS,
+        "wind_speed_unit": "ms",
         "timezone": "Asia/Tokyo",
         "models": "best_match",
         "forecast_days": "14",
