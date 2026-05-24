@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -67,9 +68,13 @@ DAILY_PARAMS = ",".join([
 ])
 CURRENT_PARAMS = "temperature_2m,weather_code,is_day"
 
-REQUEST_TIMEOUT = 30  # seconds
+REQUEST_TIMEOUT = 10  # seconds — Open-Meteo normally returns <1s; longer waits
+                      # almost always indicate a dead connection that retries faster.
 RETRY_DELAYS = [1, 4, 16]  # for 5xx / timeout
-RATE_LIMIT_DELAY = 60      # for 429
+RATE_LIMIT_DELAY = 15      # for 429. Per-thread blocking sleep, so keeping this
+                           # short matters: 60s × ~3 workers stalls the whole pool.
+                           # Jitter (see fetch_one) prevents the pool from
+                           # resynchronizing and immediately re-hitting 429.
 DEFAULT_WORKERS = 8
 USER_AGENT = "weather-cache-fetcher/1 (+https://github.com)"
 
@@ -204,8 +209,11 @@ def fetch_one(
         except HTTPError as e:
             if e.code == 429:
                 if attempt < len(RETRY_DELAYS):
-                    print(f"[warn] cell {cell_id}: HTTP 429, waiting {RATE_LIMIT_DELAY}s")
-                    time.sleep(RATE_LIMIT_DELAY)
+                    # Jitter so the worker pool doesn't resynchronize and
+                    # immediately re-hit 429 on the next minute boundary.
+                    wait = RATE_LIMIT_DELAY + random.uniform(0, RATE_LIMIT_DELAY)
+                    print(f"[warn] cell {cell_id}: HTTP 429, waiting {wait:.1f}s")
+                    time.sleep(wait)
                     continue
                 print(f"[err]  cell {cell_id}: HTTP 429 exhausted retries")
                 return None
