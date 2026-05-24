@@ -60,6 +60,7 @@ DAILY_PARAMS = ",".join([
     "temperature_2m_min",
     "precipitation_probability_max",
     "precipitation_probability_mean",
+    "precipitation_sum",
     "sunrise",
     "sunset",
     "uv_index_max",
