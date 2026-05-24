@@ -2,11 +2,15 @@ name: fetch-weather
 
 on:
   schedule:
-    # 6h interval, anchored to 04:35 JST so fresh data lands before morning
-    # wake-ups. JST 04:35 / 10:35 / 16:35 / 22:35 = UTC 19:35 / 01:35 / 07:35 / 13:35.
+    # 6h interval, anchored so fresh data lands before morning wake-ups.
+    # JST 04:17 / 10:17 / 16:17 / 22:17 = UTC 19:17 / 01:17 / 07:17 / 13:17.
+    # Minute :17 is a low-traffic slot on GitHub Actions' shared scheduler;
+    # the more common :00 / :05 / :30 minutes see frequent multi-hour delays
+    # and skipped runs under load. See observed runs on 2026-05-23 where
+    # the previous :35 schedule still missed slots and ran 1-5h late.
     # 6h x 4/day x 2632 cells x 1.9 (Open-Meteo variable weight) ~= 600K calls/month,
     # leaving 40% headroom under the Standard plan's 1M/month limit.
-    - cron: "35 1,7,13,19 * * *"
+    - cron: "17 1,7,13,19 * * *"
   workflow_dispatch:
     inputs:
       fetch_limit:
@@ -16,7 +20,12 @@ on:
 
 concurrency:
   group: fetch-weather
-  cancel-in-progress: false
+  # Drop any queued/running fetch when a newer schedule slot fires.
+  # Stale data from the previous run stays in gh-pages because fetch.py
+  # only writes successful cells (see "Restore previous gh-pages contents"
+  # step), so cancelling mid-flight is safe and prevents skipped slots
+  # when an earlier run overruns into the next slot.
+  cancel-in-progress: true
 
 permissions:
   contents: write           # required for peaceiris/actions-gh-pages
