@@ -44,14 +44,42 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout's built-in git fetch retry (3x) is not enough when
+      # GitHub Actions infra has a transient hiccup at the start of a delayed
+      # slot. Run 23 (2026-05-26 12:26 UTC) died with 4x HTTP 403 before any
+      # other step ran. Wrap the main checkout in step-level retries with a
+      # backoff so a single bad minute doesn't kill the whole 6h slot.
+      - name: Checkout (attempt 1)
+        id: checkout1
+        uses: actions/checkout@v6
+        continue-on-error: true
+
+      - name: Wait before checkout retry 2
+        if: steps.checkout1.outcome == 'failure'
+        run: sleep 30
+
+      - name: Checkout (attempt 2)
+        id: checkout2
+        if: steps.checkout1.outcome == 'failure'
+        uses: actions/checkout@v6
+        continue-on-error: true
+
+      - name: Wait before checkout retry 3
+        if: steps.checkout1.outcome == 'failure' && steps.checkout2.outcome == 'failure'
+        run: sleep 90
+
+      - name: Checkout (attempt 3, final)
+        if: steps.checkout1.outcome == 'failure' && steps.checkout2.outcome == 'failure'
+        uses: actions/checkout@v6
 
       # Pull the previously published v1/ JSONs into the workspace before
       # fetch.py runs. fetch.py only writes successful cells; cells that
       # fail this run keep their previous JSON in the deployed output.
       # Without this step, force_orphan would silently delete failed cells.
       # First-ever run: gh-pages branch doesn't exist yet, so continue-on-error
-      # makes the step harmless.
+      # makes the step harmless. (No retry wrapper here: the same continue-on-error
+      # already absorbs transient failures because the next "Stage" step guards
+      # with `if [ -d __prev_gh_pages/v1 ]`.)
       - name: Restore previous gh-pages contents
         uses: actions/checkout@v6
         continue-on-error: true
