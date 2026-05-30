@@ -1,16 +1,13 @@
 name: fetch-weather
 
 on:
-  schedule:
-    # 6h interval, anchored so fresh data lands before morning wake-ups.
-    # JST 04:17 / 10:17 / 16:17 / 22:17 = UTC 19:17 / 01:17 / 07:17 / 13:17.
-    # Minute :17 is a low-traffic slot on GitHub Actions' shared scheduler;
-    # the more common :00 / :05 / :30 minutes see frequent multi-hour delays
-    # and skipped runs under load. See observed runs on 2026-05-23 where
-    # the previous :35 schedule still missed slots and ran 1-5h late.
-    # 6h x 4/day x 2632 cells x 1.9 (Open-Meteo variable weight) ~= 600K calls/month,
-    # leaving 40% headroom under the Standard plan's 1M/month limit.
-    - cron: "17 1,7,13,19 * * *"
+  # Triggered exclusively by Cloudflare Worker `weather-cache-trigger` via
+  # workflow_dispatch (4x/day, 6h interval). GitHub's built-in schedule: was
+  # retired on 2026-05-30 after observing 3-5h delays and skipped slots on
+  # the shared scheduler even with the :17 anchor. See SW_Design.md §2.5.3
+  # for migration rationale and observed metrics.
+  # 6h x 4/day x 2632 cells x 1.9 (Open-Meteo variable weight) ~= 600K calls/month,
+  # leaving 40% headroom under the Standard plan's 1M/month limit.
   workflow_dispatch:
     inputs:
       fetch_limit:
@@ -20,7 +17,7 @@ on:
 
 concurrency:
   group: fetch-weather
-  # Drop any queued/running fetch when a newer schedule slot fires.
+  # Drop any queued/running fetch when a newer Cloudflare-triggered run fires.
   # Stale data from the previous run stays in gh-pages because fetch.py
   # only writes successful cells (see "Restore previous gh-pages contents"
   # step), so cancelling mid-flight is safe and prevents skipped slots
